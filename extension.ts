@@ -1,8 +1,8 @@
 import * as vscode from 'vscode';
-import { processDirectory } from './ai_crawler';
+import { processDirectory } from './code_snapshot';
 
 export function activate(context: vscode.ExtensionContext) {
-  let disposable = vscode.commands.registerCommand('aiCrawler.crawl', async () => {
+  let disposable = vscode.commands.registerCommand('codeSnapshot.capture', async () => {
     try {
       const workspaceFolders = vscode.workspace.workspaceFolders;
       if (!workspaceFolders || workspaceFolders.length === 0) {

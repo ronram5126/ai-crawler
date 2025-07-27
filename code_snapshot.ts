@@ -9,29 +9,24 @@ interface ChangeTracking {
   local_files: { [key: string]: string };
 }
 
-async function loadIgnorePatterns(directory: string): Promise<Ignore> {
-  const ig = ignore();
+async function addIgnorePatterns(ig: Ignore, directory: string): Promise<void> {
   const gitignorePath = path.join(directory, '.gitignore');
-  const aiignorePath = path.join(directory, '.aiignore');
-  let err: any;
-  try {
-    const gitignoreContent = await fs.readFile(gitignorePath, 'utf-8');
-    ig.add(gitignoreContent);
-  } catch (e) {
-    // Ignore if .gitignore doesn't exist
-    console.error(e);
-    err = e;
-  }
+  const csnapignorePath = path.join(directory, '.csnapignore');
+  await Promise.all([gitignorePath, csnapignorePath].map(function(path: string) {
+    return fs.readFile(path, 'utf-8').then((content) => {
+      ig.add(content);
+    }).catch((err) => {
+      // Ignore if ignore file doesn't exist
+    })
+  }))
+}
 
-  try {
-    const aiignoreContent = await fs.readFile(aiignorePath, 'utf-8');
-    ig.add(aiignoreContent);
-  } catch (e) {
-    // Ignore if .aiignore doesn't exist
-    console.error(e);
-    err = e;
-  }
-
+async function loadIgnorePatterns(workspaceRoot:string, directory: string): Promise<Ignore> {
+  let ig = ignore();
+  await Promise.all([
+    addIgnorePatterns(ig, directory),
+    addIgnorePatterns(ig, workspaceRoot)
+  ]);
   return ig;
 }
 
@@ -60,14 +55,14 @@ function detectLanguage(filePath: string): string {
   return extensionMap[path.extname(filePath).toLowerCase()] || 'text';
 }
 
-async function computeFileHash(filePath: string): Promise<string | null> {
-  try {
-    const content = await fs.readFile(filePath);
-    return crypto.createHash('sha256').update(content).digest('hex');
-  } catch (e) {
-    return null;
-  }
-}
+// async function computeFileHash(filePath: string): Promise<string | null> {
+//   try {
+//     const content = await fs.readFile(filePath);
+//     return crypto.createHash('sha256').update(content).digest('hex');
+//   } catch (e) {
+//     return null;
+//   }
+// }
 
 function estimateContentSize(content: string, filePath: string, language: string): number {
   const markdownContent = `## File: ${filePath}\n\n\`\`\`${language}\n${content}\n\`\`\`\n\n`;
@@ -89,41 +84,41 @@ async function* walkDirectory(directory: string, ig: Ignore): AsyncGenerator<str
   }
 }
 
-async function generateChangeTracking(directory: string, outputDirectory: string, ig: Ignore, idx: number = 0): Promise<ChangeTracking> {
-  const tracking: ChangeTracking = { remote_files: {}, local_files: {} };
+// async function generateChangeTracking(directory: string, outputDirectory: string, ig: Ignore, idx: number = 0): Promise<ChangeTracking> {
+//   const tracking: ChangeTracking = { remote_files: {}, local_files: {} };
 
-  // Hash remote files
-  for await (const filePath of walkDirectory(directory, ig)) {
-    const relativePath = path.relative(directory, filePath);
-    const fileHash = await computeFileHash(filePath);
-    if (fileHash) {
-      tracking.remote_files[relativePath] = fileHash;
-    }
-  }
+//   // Hash remote files
+//   for await (const filePath of walkDirectory(directory, ig)) {
+//     const relativePath = path.relative(directory, filePath);
+//     const fileHash = await computeFileHash(filePath);
+//     if (fileHash) {
+//       tracking.remote_files[relativePath] = fileHash;
+//     }
+//   }
 
-  // Hash local files
-  const localFiles = (await fs.readdir(outputDirectory)).filter(f => f.startsWith('directory_contents_') && f.endsWith('.md'));
-  for (const file of localFiles.sort()) {
-    const filePath = path.join(outputDirectory, file);
-    const fileHash = await computeFileHash(filePath);
-    if (fileHash) {
-      tracking.local_files[file] = fileHash;
-    }
-  }
+//   // Hash local files
+//   const localFiles = (await fs.readdir(outputDirectory)).filter(f => f.startsWith('snapshot_') && f.endsWith('.md'));
+//   for (const file of localFiles.sort()) {
+//     const filePath = path.join(outputDirectory, file);
+//     const fileHash = await computeFileHash(filePath);
+//     if (fileHash) {
+//       tracking.local_files[file] = fileHash;
+//     }
+//   }
 
-  // Save change_tracking.json
-  const trackingFile = path.join(outputDirectory, `change_tracking-${idx}.json`);
-  await fs.writeFile(trackingFile, JSON.stringify(tracking, null, 2), 'utf-8');
-  return tracking;
-}
+//   // Save change_tracking.json
+//   const trackingFile = path.join(outputDirectory, `change_tracking-${idx}.json`);
+//   await fs.writeFile(trackingFile, JSON.stringify(tracking, null, 2), 'utf-8');
+//   return tracking;
+// }
 
 export async function processDirectory(workspaceRoot: string): Promise<number> {
-  const config = vscode.workspace.getConfiguration('aiCrawler');
+  const config = vscode.workspace.getConfiguration('codeSnapshot');
   let directory = config.get<string>('directory', '');
   let outputDirectory = config.get<string>('outputDirectory', '');
 
   if (!directory || !outputDirectory) {
-    throw new Error("Configuration must specify 'aiCrawler.directory' and 'aiCrawler.outputDirectory'.");
+    throw new Error("Configuration must specify 'codeSnapshot.directory' and 'codeSnapshot.outputDirectory'.");
   }
 
   outputDirectory = path.isAbsolute(outputDirectory) ? outputDirectory : path.join(workspaceRoot, outputDirectory);
@@ -133,7 +128,7 @@ export async function processDirectory(workspaceRoot: string): Promise<number> {
   const maxSize = 5242880; // 5 MB
   let currentSize = 0;
   let fileCount = 1;
-  let outputFile = path.join(outputDirectory, `directory_contents_${fileCount}.md`);
+  let outputFile = path.join(outputDirectory, `snapshot_${fileCount}.md`);
   let fileBuffer: string[] = [];
   
   const directories = directory.split(",");
@@ -144,7 +139,7 @@ export async function processDirectory(workspaceRoot: string): Promise<number> {
 
     // Resolve paths relative to workspace root if not absolute
     directory = path.isAbsolute(directory) ? directory : path.join(workspaceRoot, directory);
-    const ig = await loadIgnorePatterns(directory);
+    const ig = await loadIgnorePatterns(workspaceRoot, directory);
     for await (const filePath of walkDirectory(directory, ig)) {
       const relativePath = path.relative(directory, filePath);
       const language = detectLanguage(filePath);
@@ -162,7 +157,7 @@ export async function processDirectory(workspaceRoot: string): Promise<number> {
         fileBuffer = [];
         currentSize = Buffer.byteLength(header, 'utf-8');
         fileCount++;
-        outputFile = path.join(outputDirectory, `directory_contents_${fileCount}.md`);
+        outputFile = path.join(outputDirectory, `snapshot_${fileCount}.md`);
         header = `# Directory Contents: ${path.basename(directory)} (Part ${fileCount})\n\n`;
       }
 
@@ -173,7 +168,7 @@ export async function processDirectory(workspaceRoot: string): Promise<number> {
     if (fileBuffer.length > 0) {
       await fs.writeFile(outputFile, header + fileBuffer.join(''), 'utf-8');
     }
-    await generateChangeTracking(directory, outputDirectory, ig, c);
+    // await generateChangeTracking(directory, outputDirectory, ig, c);
 
   }
   return fileCount;

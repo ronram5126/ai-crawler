@@ -1,8 +1,8 @@
 {
-  "name": "ai-crawler",
-  "displayName": "AI Crawler",
-  "description": "A VS Code extension to crawl directories and generate markdown files with file contents",
-  "author": { "name": "Ronit Ramdam BK", "email": "ron.ram5126@gmail.com", "url": "https://github.com/ronram5126" },
+  "name": "code-snapshot",                    
+  "displayName": "Code Snapshot",
+  "description": "Generate markdown snapshots of your code for AI systems",
+    "author": { "name": "Ronit Ramdam BK", "email": "ron.ram5126@gmail.com", "url": "https://github.com/ronram5126" },
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.75.0",
@@ -10,34 +10,28 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/ronram5126/ai-crawler.git"
+    "url": "https://github.com/ronram5126/code-snapshot.git"
   },
-  "categories": [
-    "Other"
-  ],
-  "activationEvents": [
-    "onCommand:aiCrawler.crawl"
-  ],
   "main": "./out/extension.js",
   "contributes": {
     "commands": [
       {
-        "command": "aiCrawler.crawl",
-        "title": "AI Crawler: Crawl Directory"
+        "command": "codeSnapshot.capture",
+        "title": "Code Snapshot: Capture Directory"
       }
     ],
     "configuration": {
-      "title": "AI Crawler",
+      "title": "Code Snapshot",
       "properties": {
-        "aiCrawler.directory": {
+        "codeSnapshot.directory": {
           "type": "string",
           "default": "",
-          "description": "The directory to crawl for files"
+          "description": "The directory to snapshot. you can add multiple directory seperated by comma (,)."
         },
-        "aiCrawler.outputDirectory": {
+        "codeSnapshot.outputDirectory": {
           "type": "string",
           "default": "",
-          "description": "The directory where output markdown files will be saved"
+          "description": "Where to store the generated markdown files"
         }
       }
     }

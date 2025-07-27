@@ -1,4 +1,4 @@
 {
-    "aiCrawler.directory": ".",
-    "aiCrawler.outputDirectory": "ProjectSummary"
+    "codeSnapshot.directory": ".",
+    "codeSnapshot.outputDirectory": "project_snapshot"
 }
