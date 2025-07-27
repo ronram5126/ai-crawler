@@ -3,7 +3,6 @@
   "displayName": "AI Crawler",
   "description": "A VS Code extension to crawl directories and generate markdown files with file contents",
   "author": { "name": "Ronit Ramdam BK", "email": "ron.ram5126@gmail.com", "url": "https://github.com/ronram5126" },
-  "publisher": "Ronit BK",
   "version": "0.0.1",
   "engines": {
     "vscode": "^1.75.0",
