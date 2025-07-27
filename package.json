@@ -1,0 +1,59 @@
+{
+  "name": "ai-crawler",
+  "displayName": "AI Crawler",
+  "description": "A VS Code extension to crawl directories and generate markdown files with file contents",
+  "author": { "name": "Ronit Ramdam BK", "email": "ron.ram5126@gmail.com", "url": "https://github.com/ronram5126" },
+  "publisher": "Ronit BK",
+  "version": "0.0.1",
+  "engines": {
+    "vscode": "^1.75.0",
+    "node": ">=18.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ronram5126/ai-crawler.git"
+  },
+  "categories": [
+    "Other"
+  ],
+  "activationEvents": [
+    "onCommand:aiCrawler.crawl"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "aiCrawler.crawl",
+        "title": "AI Crawler: Crawl Directory"
+      }
+    ],
+    "configuration": {
+      "title": "AI Crawler",
+      "properties": {
+        "aiCrawler.directory": {
+          "type": "string",
+          "default": "",
+          "description": "The directory to crawl for files"
+        },
+        "aiCrawler.outputDirectory": {
+          "type": "string",
+          "default": "",
+          "description": "The directory where output markdown files will be saved"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "@types/vscode": "^1.75.0",
+    "typescript": "^4.9.5"
+  },
+  "dependencies": {
+    "ignore": "^5.2.4"
+  }
+}
